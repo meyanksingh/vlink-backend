@@ -1,0 +1,48 @@
+Explanation of Each Folder and File
+cmd/server/main.go:
+
+The entry point that initializes the Gin router, loads configurations, connects to the database, and registers routes.
+config/config.go:
+
+Contains functions to read environment variables (e.g., database URL, JWT secret, server port) and loads them into the application configuration.
+internal/app/controllers/:
+
+auth_controller.go: Handles HTTP routes related to authentication, such as user registration and login.
+friend_controller.go: Handles routes for friend management, like adding and listing friends.
+internal/app/models/:
+
+user.go: Defines the User struct and methods associated with it (e.g., custom validation or database mapping).
+friend.go: Defines the Friend struct, representing friendships between users.
+internal/app/services/:
+
+auth_service.go: Contains business logic for authentication (e.g., login verification, token creation).
+friend_service.go: Contains business logic for adding/removing friends and listing friend data.
+internal/app/repository/:
+
+user_repository.go: Manages database interactions for user-related operations.
+friend_repository.go: Manages database interactions for friend-related operations.
+internal/db/db.go:
+
+Initializes and manages the connection to the PostgreSQL database.
+internal/middleware/auth_middleware.go:
+
+Implements JWT authentication middleware for routes that require authorization. This will parse and verify JWTs for protected endpoints.
+pkg/utils/:
+
+jwt.go: Provides functions for generating and validating JWTs, to be used in the authentication flow.
+hash.go: Contains functions for securely hashing and comparing passwords.
+routes/routes.go:
+
+Registers all API routes with their corresponding handlers/controllers using the Gin router. This file helps to keep route management centralized and organized.
+scripts/migrate.sh:
+
+A shell script to handle database migrations, setting up tables if they don’t exist.
+.env:
+
+Contains environment variables like DATABASE_URL, JWT_SECRET, and PORT. This helps in configuring different settings without hardcoding.
+go.mod:
+
+Go module file for managing dependencies.
+README.md:
+
+Documentation for setting up and using the backend, including information on routes, dependencies, and configuration.
