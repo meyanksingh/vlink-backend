@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -53,16 +52,9 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	// token, err := utils.GenerateToken(user.ID.String())
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
-	// 	return
-	// }
-
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Signup successful",
-
-		// "token":   token,
+		"email":   user.Email,
 	})
 }
 
@@ -89,7 +81,6 @@ func Login(c *gin.Context) {
 	}
 
 	token, err := utils.GenerateToken(user.ID.String())
-	fmt.Print(user.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
 		return
@@ -98,6 +89,7 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Login successful",
 		"token":   token,
+		"user":    user,
 	})
 }
 
@@ -109,9 +101,17 @@ func Home(c *gin.Context) {
 		return
 	}
 
+	//Populate Data in Golang
+	var user models.User
+	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invaliud DB Shity"})
+		return
+	}
+
 	// Send a welcome message with the user ID
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to the protected home page!",
-		"user_id": userID,
+		"email":   user.Email,
+		"name":    user.FirstName + " " + user.LastName,
 	})
 }
