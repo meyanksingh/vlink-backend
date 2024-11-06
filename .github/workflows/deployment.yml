@@ -1,1 +1,49 @@
 
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./Dockerfile
+        cache-from: type=registry,ref=manik072/vlinkbackend:latest
+        cache-to: type=registry,ref=manik072/vlinkbackend:latest,mode=max
+        platforms: |
+          linux/amd64
+          linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          manik072/vlinkbackend:${{ github.ref_name }}-${{ github.sha }}
+          manik072/vlinkbackend:latest
+    
+    - name: Notify Slack on failure
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: Deployment of ${{ github.ref }} failed
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      if: failure()
