@@ -1,4 +1,3 @@
-
 name: Docker Image CI
 
 on:
@@ -8,42 +7,60 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build-and-push:
     runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v3
-    
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: 'arm64,amd64'
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
-      
+
     - name: Login to Docker Hub
       uses: docker/login-action@v2
       with:
         username: manik072
-        password: Manik@1297
-        
-    - name: Build and push
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    # Build amd64 first
+    - name: Build and push amd64
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ./Dockerfile
-        cache-from: type=registry,ref=manik072/vlinkbackend:latest
-        cache-to: type=registry,ref=manik072/vlinkbackend:latest,mode=max
-        platforms: |
-          linux/amd64
-          linux/arm64
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: |
-          manik072/vlinkbackend:${{ github.ref_name }}-${{ github.sha }}
-          manik072/vlinkbackend:latest
-    
+        platforms: linux/amd64
+        push: true
+        tags: manik072/vlinkbackend:amd64-latest
+        provenance: false
+        outputs: type=registry,push=true
+
+    # Build arm64 separately
+    - name: Build and push arm64
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        platforms: linux/arm64
+        push: true
+        tags: manik072/vlinkbackend:arm64-latest
+        provenance: false
+        outputs: type=registry,push=true
+
+    # Create and push the multi-platform manifest
+    - name: Create and push manifest
+      run: |
+        docker buildx imagetools create -t manik072/vlinkbackend:latest \
+          manik072/vlinkbackend:amd64-latest \
+          manik072/vlinkbackend:arm64-latest
+
     - name: Notify Slack on failure
       uses: 8398a7/action-slack@v3
+      if: failure()
       with:
         status: ${{ job.status }}
         text: Deployment of ${{ github.ref }} failed
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
-      if: failure()
