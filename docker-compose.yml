@@ -5,7 +5,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: manik072/vlinkbackend:latest
     ports:
       - "5000:5000"
     environment:

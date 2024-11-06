@@ -1,45 +1,36 @@
 # Stage 1: Build the Go application
-FROM --platform=$BUILDPLATFORM golang:1.23.2-alpine AS builder
+FROM golang:1.23.2 AS builder
 
-# Install build dependencies
-RUN apk add --no-cache gcc musl-dev
-
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy only the dependency files first
+# Copy the go.mod and go.sum files to download dependencies first
 COPY go.mod go.sum ./
-
-# Download dependencies (will be cached if no changes)
 RUN go mod download
 
 # Copy the rest of the application code
 COPY . .
 
-# Build the application with platform-specific optimizations
-ARG TARGETOS TARGETARCH
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} CGO_ENABLED=0 go build \
-    -ldflags="-w -s" \
-    -o vlink_backend ./cmd/server/main.go
+# Build the application, specifying the entry point in cmd/server/main.go
+RUN go build -o vlink_backend ./cmd/server/main.go
 
-# Stage 2: Create a minimal runtime image
-FROM --platform=$TARGETPLATFORM alpine:3.19
+# Stage 2: Run the application
+FROM golang:1.23.2
 
-# Install CA certificates for HTTPS
-RUN apk add --no-cache ca-certificates tzdata
-
-# Set the working directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Copy only the compiled binary from builder
-COPY --from=builder /app/vlink_backend .
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/vlink_backend /app/vlink_backend
 
+# Copy any necessary configuration files (e.g., .env) into the container
 COPY .env .env
-# Expose the application port
+
+# Expose the application port (change if different)
 EXPOSE 5000
 
-# Set environment variables
+# Set environment variables if necessary, e.g., ENV=development
 ENV ENV=development
 
 # Run the application
-CMD ["./vlink_backend"]
+CMD ["/app/vlink_backend"]

@@ -14,7 +14,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error with loading ENv File")
+		log.Println("No .env file found - using environment variables from docker-compose")
 	}
 
 	database.ConnectDB()
@@ -31,6 +31,8 @@ func main() {
 	}))
 
 	routes.UserRoutes(router)
+
+	router.Run("0.0.0.0:5000")
 
 	router.Run(" : " + port)
 
