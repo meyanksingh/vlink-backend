@@ -22,9 +22,7 @@ WORKDIR /app
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/vlink_backend /app/vlink_backend
-
 # Copy any necessary configuration files (e.g., .env) into the container
-COPY .env .env
 
 # Expose the application port (change if different)
 EXPOSE 5000
