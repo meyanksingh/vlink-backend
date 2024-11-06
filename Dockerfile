@@ -27,7 +27,7 @@ COPY --from=builder /app/vlink_backend /app/vlink_backend
 COPY .env .env
 
 # Expose the application port (change if different)
-EXPOSE 8080
+EXPOSE 5000
 
 # Set environment variables if necessary, e.g., ENV=development
 ENV ENV=development
