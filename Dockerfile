@@ -34,6 +34,7 @@ WORKDIR /app
 # Copy only the compiled binary from builder
 COPY --from=builder /app/vlink_backend .
 
+COPY .env .env
 # Expose the application port
 EXPOSE 5000
 
