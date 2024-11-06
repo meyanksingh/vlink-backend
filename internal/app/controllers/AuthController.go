@@ -61,6 +61,7 @@ func Signup(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Signup successful",
+
 		// "token":   token,
 	})
 }
@@ -101,5 +102,16 @@ func Login(c *gin.Context) {
 }
 
 func Home(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "Massage Done!"})
+	// Retrieve user_id from the context set by the JWT middleware
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	// Send a welcome message with the user ID
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Welcome to the protected home page!",
+		"user_id": userID,
+	})
 }
