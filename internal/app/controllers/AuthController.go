@@ -104,7 +104,7 @@ func Home(c *gin.Context) {
 	//Populate Data in Golang
 	var user models.User
 	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invaliud DB Shity"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invaliud DB "})
 		return
 	}
 

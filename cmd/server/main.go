@@ -32,6 +32,6 @@ func main() {
 
 	routes.UserRoutes(router)
 
-	router.Run(":" + port)
+	router.Run(" : " + port)
 
 }
