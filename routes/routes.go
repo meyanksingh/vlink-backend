@@ -10,3 +10,7 @@ func UserRoutes(incomingRoutes *gin.Engine) {
 	incomingRoutes.POST("users/login", controller.Login)
 	incomingRoutes.GET("users/home", controller.Home)
 }
+
+func MainRoutes(incomiongRoutes *gin.Engine) {
+	incomiongRoutes.GET("/", controller.HomePage)
+}

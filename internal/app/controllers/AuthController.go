@@ -53,15 +53,15 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateToken(user.ID.String())
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
-		return
-	}
+	// token, err := utils.GenerateToken(user.ID.String())
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not generate token"})
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Signup successful",
-		"token":   token,
+		// "token":   token,
 	})
 }
 
