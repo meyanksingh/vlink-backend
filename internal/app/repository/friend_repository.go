@@ -9,6 +9,9 @@ import (
 )
 
 func SendFriendRequest(senderID, receiverID uuid.UUID) error {
+	if senderID == receiverID {
+		return errors.New("cannot send friend request to yourself")
+	}
 	var count int64
 	err := db.DB.Model(&models.Friend{}).
 		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", senderID, receiverID, receiverID, senderID).
