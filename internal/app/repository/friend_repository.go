@@ -1,0 +1,100 @@
+package repository
+
+import (
+	"errors"
+
+	"github.com/google/uuid"
+	"github.com/meyanksingh/vlink-backend/internal/app/models"
+	db "github.com/meyanksingh/vlink-backend/internal/db"
+)
+
+func SendFriendRequest(senderID, receiverID uuid.UUID) error {
+	var count int64
+	db.DB.Model(&models.Friend{}).
+		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", senderID, receiverID, receiverID, senderID).
+		Count(&count)
+	if count > 0 {
+		return errors.New("you are already friends with this user")
+	}
+
+	db.DB.Model(&models.FriendRequest{}).
+		Where("sender_id = ? AND receiver_id = ? AND status = ?", senderID, receiverID, "pending").
+		Count(&count)
+	if count > 0 {
+		return errors.New("friend request already exists")
+	}
+
+	friendRequest := models.FriendRequest{
+		SenderID:   senderID,
+		ReceiverID: receiverID,
+		Status:     "pending",
+	}
+	return db.DB.Create(&friendRequest).Error
+}
+
+func AcceptFriendRequest(requestID, userID, friendID uuid.UUID) error {
+	var request models.FriendRequest
+	err := db.DB.Where("id = ? AND receiver_id = ? AND status = ?", requestID, userID, "pending").First(&request).Error
+	if err != nil {
+		return errors.New("friend request not found or already processed")
+	}
+
+	if err := db.DB.Model(&models.FriendRequest{}).
+		Where("id = ?", requestID).
+		Update("status", "accepted").Error; err != nil {
+		return err
+	}
+
+	friend := models.Friend{
+		UserID:   userID,
+		FriendID: friendID,
+	}
+	return db.DB.Create(&friend).Error
+}
+
+func DeclineFriendRequest(requestID uuid.UUID) error {
+	var request models.FriendRequest
+	err := db.DB.Where("id = ? AND status = ?", requestID, "pending").First(&request).Error
+	if err != nil {
+		return errors.New("friend request not found or already processed")
+	}
+
+	return db.DB.Model(&models.FriendRequest{}).
+		Where("id = ?", requestID).
+		Update("status", "declined").Error
+}
+
+func RemoveFriend(userID, friendID uuid.UUID) error {
+	var count int64
+	db.DB.Model(&models.Friend{}).
+		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).
+		Count(&count)
+
+	if count == 0 {
+		return errors.New("you are not friends with this user")
+	}
+
+	return db.DB.Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).
+		Delete(&models.Friend{}).Error
+}
+
+func ListFriends(userID uuid.UUID) ([]models.Friend, error) {
+	var friends []models.Friend
+	err := db.DB.Where("user_id = ? OR friend_id = ?", userID, userID).Find(&friends).Error
+	return friends, err
+}
+
+func ListFriendRequests(userID uuid.UUID) ([]models.FriendRequest, error) {
+	var requests []models.FriendRequest
+	err := db.DB.Where("receiver_id = ? AND status = ?", userID, "pending").Find(&requests).Error
+	return requests, err
+}
+
+func GetFriendRequestByID(requestID uuid.UUID) (models.FriendRequest, error) {
+	var request models.FriendRequest
+	err := db.DB.Where("id = ?", requestID).First(&request).Error
+	if err != nil {
+		return request, err
+	}
+	return request, nil
+}

@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func Signup(c *gin.Context) {
+func Register(c *gin.Context) {
 	var requestBody struct {
 		FirstName string `json:"first_name" binding:"required"`
 		LastName  string `json:"last_name" binding:"required"`
@@ -90,28 +90,5 @@ func Login(c *gin.Context) {
 		"message": "Login successful",
 		"token":   token,
 		"user":    user,
-	})
-}
-
-func Home(c *gin.Context) {
-	// Retrieve user_id from the context set by the JWT middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
-		return
-	}
-
-	//Populate Data in Golang
-	var user models.User
-	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invaliud DB "})
-		return
-	}
-
-	// Send a welcome message with the user ID
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Welcome to the protected home page!",
-		"email":   user.Email,
-		"name":    user.FirstName + " " + user.LastName,
 	})
 }
