@@ -2,14 +2,10 @@ package controller
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/meyanksingh/vlink-backend/internal/app/models"
-	database "github.com/meyanksingh/vlink-backend/internal/db"
+	"github.com/meyanksingh/vlink-backend/internal/app/repository"
 	"github.com/meyanksingh/vlink-backend/pkg/utils"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func Register(c *gin.Context) {
@@ -25,30 +21,19 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	var existingUser models.User
-	if err := database.DB.Where("email = ?", requestBody.Email).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already in use"})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
+	emailExists, err := repository.CheckEmailExists(requestBody.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking email"})
+		return
+	}
+	if emailExists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already in use"})
 		return
 	}
 
-	user := models.User{
-		ID:        uuid.New(),
-		FirstName: requestBody.FirstName,
-		LastName:  requestBody.LastName,
-		Email:     requestBody.Email,
-		Password:  string(hashedPassword),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	if err := database.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
+	user, err := repository.CreateUser(requestBody.FirstName, requestBody.LastName, requestBody.Email, requestBody.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -69,14 +54,9 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if err := database.DB.Where("email = ?", requestBody.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(requestBody.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	user, err := repository.AuthenticateUser(requestBody.Email, requestBody.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 

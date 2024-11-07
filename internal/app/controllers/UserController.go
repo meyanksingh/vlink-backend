@@ -61,7 +61,18 @@ func AcceptFriendRequest(c *gin.Context) {
 		return
 	}
 
-	err := repository.AcceptFriendRequest(req.RequestID, userID, req.RequestID)
+	request, err := repository.GetFriendRequestByID(req.RequestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if request.ReceiverID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to accept this request"})
+		return
+	}
+
+	err = repository.AcceptFriendRequest(req.RequestID, userID, request.SenderID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -80,7 +91,18 @@ func DeclineFriendRequest(c *gin.Context) {
 		return
 	}
 
-	err := repository.DeclineFriendRequest(req.RequestID)
+	request, err := repository.GetFriendRequestByID(req.RequestID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if request.ReceiverID != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You are not authorized to decline this request"})
+		return
+	}
+
+	err = repository.DeclineFriendRequest(req.RequestID, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -110,10 +132,9 @@ func RemoveFriend(c *gin.Context) {
 
 func ListFriends(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
-
 	friends, err := repository.ListFriends(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friends"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve friends"})
 		return
 	}
 
@@ -122,12 +143,11 @@ func ListFriends(c *gin.Context) {
 
 func ListFriendRequests(c *gin.Context) {
 	userID := c.MustGet("user_id").(uuid.UUID)
-
 	requests, err := repository.ListFriendRequests(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve friend requests"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve friend requests"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"requests": requests})
+	c.JSON(http.StatusOK, gin.H{"friend_requests": requests})
 }

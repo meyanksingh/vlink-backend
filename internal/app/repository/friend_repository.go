@@ -10,16 +10,22 @@ import (
 
 func SendFriendRequest(senderID, receiverID uuid.UUID) error {
 	var count int64
-	db.DB.Model(&models.Friend{}).
+	err := db.DB.Model(&models.Friend{}).
 		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", senderID, receiverID, receiverID, senderID).
-		Count(&count)
+		Count(&count).Error
+	if err != nil {
+		return err
+	}
 	if count > 0 {
 		return errors.New("you are already friends with this user")
 	}
 
-	db.DB.Model(&models.FriendRequest{}).
+	err = db.DB.Model(&models.FriendRequest{}).
 		Where("sender_id = ? AND receiver_id = ? AND status = ?", senderID, receiverID, "pending").
-		Count(&count)
+		Count(&count).Error
+	if err != nil {
+		return err
+	}
 	if count > 0 {
 		return errors.New("friend request already exists")
 	}
@@ -39,9 +45,10 @@ func AcceptFriendRequest(requestID, userID, friendID uuid.UUID) error {
 		return errors.New("friend request not found or already processed")
 	}
 
-	if err := db.DB.Model(&models.FriendRequest{}).
+	err = db.DB.Model(&models.FriendRequest{}).
 		Where("id = ?", requestID).
-		Update("status", "accepted").Error; err != nil {
+		Update("status", "accepted").Error
+	if err != nil {
 		return err
 	}
 
@@ -52,11 +59,11 @@ func AcceptFriendRequest(requestID, userID, friendID uuid.UUID) error {
 	return db.DB.Create(&friend).Error
 }
 
-func DeclineFriendRequest(requestID uuid.UUID) error {
+func DeclineFriendRequest(requestID, userID uuid.UUID) error {
 	var request models.FriendRequest
-	err := db.DB.Where("id = ? AND status = ?", requestID, "pending").First(&request).Error
+	err := db.DB.Where("id = ? AND receiver_id = ? AND status = ?", requestID, userID, "pending").First(&request).Error
 	if err != nil {
-		return errors.New("friend request not found or already processed")
+		return errors.New("friend request not found or already accepted/rejected")
 	}
 
 	return db.DB.Model(&models.FriendRequest{}).
@@ -66,9 +73,12 @@ func DeclineFriendRequest(requestID uuid.UUID) error {
 
 func RemoveFriend(userID, friendID uuid.UUID) error {
 	var count int64
-	db.DB.Model(&models.Friend{}).
+	err := db.DB.Model(&models.Friend{}).
 		Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).
-		Count(&count)
+		Count(&count).Error
+	if err != nil {
+		return err
+	}
 
 	if count == 0 {
 		return errors.New("you are not friends with this user")
