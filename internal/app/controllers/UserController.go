@@ -11,20 +11,24 @@ import (
 )
 
 func Home(c *gin.Context) {
-	userID, exists := c.Get("user_id")
+	userIDStr, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
 		return
 	}
 
-	//Populate Data in Golang
-	var user models.User
-	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Error User Not Found "})
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID"})
 		return
 	}
 
-	// Send a welcome message with the user ID
+	var user models.User
+	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User Not Found"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome to the protected home page!",
 		"email":   user.Email,
@@ -33,7 +37,18 @@ func Home(c *gin.Context) {
 }
 
 func SendFriendRequest(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
 	var req struct {
 		ReceiverID uuid.UUID `json:"receiver_id" binding:"required"`
 	}
@@ -42,7 +57,7 @@ func SendFriendRequest(c *gin.Context) {
 		return
 	}
 
-	err := repository.SendFriendRequest(userID, req.ReceiverID)
+	err = repository.SendFriendRequest(userID, req.ReceiverID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -52,7 +67,18 @@ func SendFriendRequest(c *gin.Context) {
 }
 
 func AcceptFriendRequest(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
 	var req struct {
 		RequestID uuid.UUID `json:"request_id" binding:"required"`
 	}
@@ -82,7 +108,18 @@ func AcceptFriendRequest(c *gin.Context) {
 }
 
 func DeclineFriendRequest(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
 	var req struct {
 		RequestID uuid.UUID `json:"request_id" binding:"required"`
 	}
@@ -112,7 +149,18 @@ func DeclineFriendRequest(c *gin.Context) {
 }
 
 func RemoveFriend(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
 	var req struct {
 		FriendID uuid.UUID `json:"friend_id" binding:"required"`
 	}
@@ -121,7 +169,7 @@ func RemoveFriend(c *gin.Context) {
 		return
 	}
 
-	err := repository.RemoveFriend(userID, req.FriendID)
+	err = repository.RemoveFriend(userID, req.FriendID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -131,7 +179,18 @@ func RemoveFriend(c *gin.Context) {
 }
 
 func ListFriends(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
 	friends, err := repository.ListFriends(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve friends"})
@@ -142,7 +201,18 @@ func ListFriends(c *gin.Context) {
 }
 
 func ListFriendRequests(c *gin.Context) {
-	userID := c.MustGet("user_id").(uuid.UUID)
+	userIDStr, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userID, err := uuid.Parse(userIDStr.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid User ID"})
+		return
+	}
+
 	requests, err := repository.ListFriendRequests(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve friend requests"})
