@@ -30,10 +30,9 @@ func main() {
 		AllowCredentials: true,
 	}))
 
+	routes.AuthRoutes(router)
 	routes.UserRoutes(router)
 
-	router.Run("0.0.0.0:5000")
-
-	router.Run(" : " + port)
+	router.Run("0.0.0.0:" + port)
 
 }

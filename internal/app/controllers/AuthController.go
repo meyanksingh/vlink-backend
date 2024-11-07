@@ -2,17 +2,13 @@ package controller
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/meyanksingh/vlink-backend/internal/app/models"
-	database "github.com/meyanksingh/vlink-backend/internal/db"
+	"github.com/meyanksingh/vlink-backend/internal/app/repository"
 	"github.com/meyanksingh/vlink-backend/pkg/utils"
-	"golang.org/x/crypto/bcrypt"
 )
 
-func Signup(c *gin.Context) {
+func Register(c *gin.Context) {
 	var requestBody struct {
 		FirstName string `json:"first_name" binding:"required"`
 		LastName  string `json:"last_name" binding:"required"`
@@ -25,30 +21,19 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	var existingUser models.User
-	if err := database.DB.Where("email = ?", requestBody.Email).First(&existingUser).Error; err == nil {
-		c.JSON(http.StatusConflict, gin.H{"error": "Email already in use"})
-		return
-	}
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(requestBody.Password), bcrypt.DefaultCost)
+	emailExists, err := repository.CheckEmailExists(requestBody.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not hash password"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking email"})
+		return
+	}
+	if emailExists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Email already in use"})
 		return
 	}
 
-	user := models.User{
-		ID:        uuid.New(),
-		FirstName: requestBody.FirstName,
-		LastName:  requestBody.LastName,
-		Email:     requestBody.Email,
-		Password:  string(hashedPassword),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	if err := database.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create user"})
+	user, err := repository.CreateUser(requestBody.FirstName, requestBody.LastName, requestBody.Email, requestBody.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -69,14 +54,9 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	var user models.User
-	if err := database.DB.Where("email = ?", requestBody.Email).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(requestBody.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+	user, err := repository.AuthenticateUser(requestBody.Email, requestBody.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -90,28 +70,5 @@ func Login(c *gin.Context) {
 		"message": "Login successful",
 		"token":   token,
 		"user":    user,
-	})
-}
-
-func Home(c *gin.Context) {
-	// Retrieve user_id from the context set by the JWT middleware
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
-		return
-	}
-
-	//Populate Data in Golang
-	var user models.User
-	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invaliud DB "})
-		return
-	}
-
-	// Send a welcome message with the user ID
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Welcome to the protected home page!",
-		"email":   user.Email,
-		"name":    user.FirstName + " " + user.LastName,
 	})
 }
