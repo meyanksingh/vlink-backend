@@ -19,4 +19,5 @@ type FriendRequest struct {
 	ReceiverID uuid.UUID `json:"receiver_id" gorm:"type:uuid;not null"`
 	Status     string    `json:"status" gorm:"type:varchar(20);not null"`
 	CreatedAt  time.Time `json:"created_at" gorm:"autoCreateTime"`
+	// Here we need to change the schema
 }
