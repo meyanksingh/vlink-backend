@@ -56,24 +56,6 @@ go run cmd/server/main.go
 - WebRTC Signaling Server
 - Secure Token Management System
 
-## Development Roadmap
-
-### Completed
-- [x] User Authentication System
-- [x] Basic Friend Management
-- [x] JWT Token Generation
-
-### In Progress
-- [ ] WebRTC Signaling Implementation
-- [ ] Advanced Peer Connection Handling
-- [ ] Group Video Call Support
-
-## Performance Considerations
-
-- Designed for horizontal scalability
-- Optimized for low-latency communications
-- Efficient memory management
-- Minimal resource consumption
 
 ## Contribution Guidelines
 
